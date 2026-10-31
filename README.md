@@ -52,74 +52,7 @@ A budget-first, GenAI-powered event planning assistant that turns celebration re
 
 ---
 
-## 3. Quick Start & Setup
-
-### Prerequisites
-- Node.js 18+ (tested on Node.js v24.15.0)
-- npm 9+
-
-### Installation & Run
-
-```bash
-# 1. Navigate to project directory
-cd C:\Users\Project\utsavmate-ai
-
-# 2. Install dependencies (already installed)
-npm install
-
-# 3. (Optional) Configure Gemini API Key
-# Copy .env.example to .env.local and add your key:
-# GEMINI_API_KEY=your_key_here
-# If omitted, UtsavMate AI automatically operates using its built-in offline engine.
-
-# 4. Run Development Server
-npm run dev
-
-# 5. Open in Browser
-# http://localhost:3000
-```
-
-### Production Build & Start
-
-```bash
-npm run build
-npm start
-```
-
----
-
-## 4. Running Automated Tests
-
-```bash
-npm test
-```
-
-### Actual Test Results (Vitest)
-```text
- ✓ tests/adversarial_challenge.test.ts (15 tests)
- ✓ tests/errors.test.ts (7 tests)
- ✓ tests/refine.test.ts (24 tests)
- ✓ tests/api_validation.test.ts (19 tests)
- ✓ tests/schema.test.ts (4 tests)
- ✓ tests/ai.test.ts (3 tests)
- ✓ tests/budget.test.ts (8 tests)
- ✓ tests/adversarial_refine_engine.test.ts (27 tests)
- ✓ tests/timeline.test.ts (5 tests)
- ✓ tests/api.test.ts (3 tests)
- ✓ tests/vendors.test.ts (3 tests)
- ✓ tests/workspace.test.ts (21 tests)
- ✓ tests/adversarial_lifecycle_concurrency.test.ts (9 tests)
- ✓ tests/adversarial_error_resilience.test.ts (23 tests)
- ✓ tests/adversarial_api_routes.test.ts (55 tests)
-
- Test Files  15 passed (15)
-      Tests  226 passed (226)
-   Duration  860ms
-```
-
----
-
-## 5. Architecture & Code Structure
+## 3. Architecture & Code Structure
 
 ```
 utsavmate-ai/
@@ -170,7 +103,7 @@ utsavmate-ai/
 
 ---
 
-## 6. Security & Accessibility
+## 4. Security & Accessibility
 
 - **Input Sanitization & Strict Schema Validation**: Every API endpoint parses inputs using `zod`. Length limits, numeric bounds, and enum checks prevent malformed payloads.
 - **Enterprise Security Headers**: Configured in `next.config.ts` including HSTS (`max-age=63072000; includeSubDomains; preload`), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, and `Permissions-Policy`.
@@ -189,7 +122,7 @@ utsavmate-ai/
 
 ---
 
-## 7. Creating Your First Event
+## 5. Creating Your First Event
 
 To get started:
 1. Navigate to /events/new or click **Plan My Event** from the landing page.
