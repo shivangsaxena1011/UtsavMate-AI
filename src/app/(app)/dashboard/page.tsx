@@ -2,11 +2,10 @@ import Link from "next/link";
 import {
   CalendarDays, Users, IndianRupee, TrendingUp,
   Sparkles, PlusCircle, ArrowRight, Clock, Store,
-  CheckCircle2, AlertTriangle, MapPin
+  CheckCircle2, MapPin
 } from "lucide-react";
 import { listEvents } from "@/lib/storage";
-import { computeBudgetSummary, formatINR } from "@/lib/engines/budget";
-import { getEventPlan } from "@/lib/storage";
+import { formatINR } from "@/lib/engines/budget";
 
 export const dynamic = "force-dynamic";
 

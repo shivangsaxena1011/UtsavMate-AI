@@ -96,15 +96,16 @@ npm test
 
 ### Actual Test Results (Vitest)
 ```text
- ✓ tests/timeline.test.ts (3 tests)
- ✓ tests/budget.test.ts (6 tests)
- ✓ tests/schema.test.ts (2 tests)
+ ✓ tests/budget.test.ts (8 tests)
+ ✓ tests/vendors.test.ts (3 tests)
+ ✓ tests/timeline.test.ts (5 tests)
+ ✓ tests/schema.test.ts (4 tests)
  ✓ tests/ai.test.ts (3 tests)
  ✓ tests/api.test.ts (3 tests)
 
- Test Files  5 passed (5)
-      Tests  17 passed (17)
-   Duration  385ms
+ Test Files  6 passed (6)
+      Tests  26 passed (26)
+   Duration  360ms
 ```
 
 ---
@@ -162,16 +163,20 @@ utsavmate-ai/
 
 ## 6. Security & Accessibility
 
-- **Input Sanitization & Schema Validation**: Every API endpoint parses inputs using `zod`. Length limits, numeric bounds, and enum checks prevent malformed payloads.
+- **Input Sanitization & Strict Schema Validation**: Every API endpoint parses inputs using `zod`. Length limits, numeric bounds, and enum checks prevent malformed payloads.
+- **Enterprise Security Headers**: Configured in `next.config.ts` including HSTS (`max-age=63072000; includeSubDomains; preload`), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, and `Permissions-Policy`.
 - **Server-Side AI Secrets**: API keys are accessed strictly in server route handlers. No keys are ever bundled into client code.
 - **Prompt Injection Defense**: User notes are delimited in `<EVENT_DATA>` blocks and treated purely as raw data.
 - **XSS Prevention**: React automatically escapes rendered strings; `dangerouslySetInnerHTML` is never used.
-- **WCAG 2.2 AA Compliance**:
+- **WCAG 2.2 AA Accessibility & Assistive Tech**:
+  - Skip-to-main-content landmark link for keyboard-only navigation.
+  - WAI-ARIA accessible modal dialogs (`role="dialog"`, `aria-modal="true"`, `aria-labelledby`).
+  - Screen-reader accessible button labels (`aria-label`) on all interactive icon buttons.
   - Semantic HTML landmarks (`<header>`, `<main>`, `<nav>`, `<footer>`, `<section>`).
   - High-contrast typography (#231924 dark charcoal on #faf8f5 warm ivory, contrast ratio > 11:1).
-  - Visible keyboard focus rings (`outline: 2px solid #d9532f`).
+  - Visible keyboard focus rings (`outline: 2px solid #7C3AED`).
   - Non-color reliant statuses (text badges + distinct icons for overdue, completed, and overspent states).
-  - Print-specific media styles hiding UI chrome for clean PDF/paper dossiers.
+  - Print-specific media styles hiding UI chrome for clean physical binder dossiers.
 
 ---
 

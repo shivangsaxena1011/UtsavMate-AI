@@ -10,7 +10,7 @@ const EVENT_TYPES = [
   { value: "wedding", label: "Wedding", emoji: "💍", desc: "Receptions, ceremonies, and celebrations" },
   { value: "birthday", label: "Birthday", emoji: "🎂", desc: "Milestone parties and celebrations" },
   { value: "anniversary", label: "Anniversary", emoji: "💑", desc: "Romantic milestones and renewals" },
-  { value: "college_event", label: "College Event", emoji: "🎓", desc: "Fests, farewells, and fresher parties" },
+  { value: "college_fest", label: "College Event / Fest", emoji: "🎓", desc: "Fests, farewells, and fresher parties" },
   { value: "community", label: "Community Event", emoji: "🏘️", desc: "Local festivals and gatherings" },
   { value: "custom", label: "Custom Event", emoji: "✨", desc: "Any other celebration" },
 ];
@@ -81,6 +81,13 @@ export default function NewEventPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          eventType: form.eventType === "college_event" ? "college_fest" : form.eventType,
+          language:
+            form.preferredLanguage === "hindi"
+              ? "hi"
+              : form.preferredLanguage === "hinglish"
+              ? "hinglish"
+              : "en",
           guestCount: Number(form.guestCount),
           totalBudget: Number(form.totalBudget),
         }),

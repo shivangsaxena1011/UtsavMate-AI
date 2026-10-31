@@ -69,4 +69,32 @@ describe("Budget Engine", () => {
     const formatted = formatINR(400000);
     expect(formatted).toContain("4,00,000");
   });
+
+  it("calculates exact category breakdowns with variance and utilization", () => {
+    const items = generateInitialBudget("wedding", 200000);
+    const summary = computeBudgetSummary(items, 200000, 100);
+
+    expect(summary.totalEstimated).toBe(200000);
+    expect(summary.costPerGuestEstimated).toBe(2000);
+    expect(summary.costPerGuestActual).toBe(0);
+    expect(summary.utilizationPercentage).toBe(100);
+
+    // Verify catering item breakdown
+    const cateringBreakdown = summary.categoryBreakdown.catering;
+    expect(cateringBreakdown).toBeDefined();
+    expect(cateringBreakdown.estimated).toBe(60000); // 30% of 200,000
+    expect(cateringBreakdown.percentageOfBudget).toBe(30);
+    expect(cateringBreakdown.isOverspent).toBe(false);
+  });
+
+  it("computes warnings and marks category overspent when item actual exceeds estimated", () => {
+    const items = generateInitialBudget("birthday", 100000);
+    const decorItem = items.find((i) => i.category === "decor")!;
+    decorItem.actualAmount = decorItem.estimatedAmount + 15000;
+
+    const summary = computeBudgetSummary(items, 100000, 50);
+    expect(summary.categoryBreakdown.decor.isOverspent).toBe(true);
+    expect(summary.categoryBreakdown.decor.variance).toBe(15000);
+    expect(summary.warnings.some((w) => w.includes("Decoration"))).toBe(true);
+  });
 });

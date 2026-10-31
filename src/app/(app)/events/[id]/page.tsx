@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
   Sparkles, Calendar, Users, IndianRupee, MapPin,
-  CheckCircle2, AlertTriangle, Clock, Store, Download,
+  AlertTriangle, Clock, Store, Download,
   Printer, Plus, Trash2, Send, Loader2, Check,
-  Info, Languages, ShieldCheck, TrendingUp,
+  Info,
 } from "lucide-react";
 import { FullEventPlan, BudgetItem, TimelineTask, Vendor, BudgetSummary } from "@/lib/types";
 import { computeBudgetSummary, formatINR, CATEGORY_LABELS } from "@/lib/engines/budget";
@@ -52,7 +52,8 @@ export default function EventWorkspacePage() {
     category: "Venue", businessName: "", estimatedQuote: 0, finalQuote: 0, status: "not_contacted",
   });
 
-  const fetchPlan = async () => {
+  const fetchPlan = useCallback(async () => {
+    if (!eventId) return;
     try {
       const res = await fetch(`/api/events/${eventId}`);
       const data = await res.json();
@@ -63,10 +64,35 @@ export default function EventWorkspacePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [eventId]);
 
   useEffect(() => {
-    if (eventId) fetchPlan();
+    let ignore = false;
+    const loadPlan = async () => {
+      try {
+        const res = await fetch(`/api/events/${eventId}`);
+        const data = await res.json();
+        if (!ignore) {
+          if (!res.ok || !data.success) throw new Error(data.error || "Event not found");
+          setPlan(data.plan);
+        }
+      } catch (err: unknown) {
+        if (!ignore) {
+          setError(err instanceof Error ? err.message : "Error loading event");
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    };
+
+    if (eventId) {
+      void loadPlan();
+    }
+    return () => {
+      ignore = true;
+    };
   }, [eventId]);
 
   // Sync hash with activeTab
@@ -492,6 +518,7 @@ export default function EventWorkspacePage() {
                             onClick={() => {
                               if (confirm(`Delete "${item.name}"?`)) handleDeleteBudgetItem(item.id);
                             }}
+                            aria-label={`Delete budget item ${item.name}`}
                             className="text-gray-400 hover:text-red-500 p-1 rounded transition-colors"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -573,6 +600,7 @@ export default function EventWorkspacePage() {
                 >
                   <button
                     onClick={() => handleToggleTask(task)}
+                    aria-label={task.status === "completed" ? `Mark ${task.title} as pending` : `Mark ${task.title} as completed`}
                     className={`mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all ${
                       task.status === "completed" ? "bg-[#10B981] border-[#10B981]" : "border-gray-300 hover:border-[#7C3AED]"
                     }`}
@@ -817,6 +845,7 @@ export default function EventWorkspacePage() {
               <button
                 onClick={() => handleRefineSubmit()}
                 disabled={chatLoading || !chatPrompt.trim()}
+                aria-label="Send query to AI celebration assistant"
                 className="bg-[#7C3AED] hover:bg-[#6D28D9] text-white px-4 py-2.5 rounded-xl disabled:opacity-50 transition-colors"
               >
                 {chatLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
@@ -905,7 +934,7 @@ export default function EventWorkspacePage() {
 
       {/* Add Budget Modal */}
       {showAddBudgetModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div role="dialog" aria-modal="true" aria-labelledby="add-budget-title" className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <form
             onSubmit={async (e) => {
               e.preventDefault();
@@ -917,7 +946,7 @@ export default function EventWorkspacePage() {
             }}
             className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4"
           >
-            <h3 className="font-bold text-gray-900 text-lg">Add Budget Item</h3>
+            <h3 id="add-budget-title" className="font-bold text-gray-900 text-lg">Add Budget Item</h3>
             <div>
               <label className="text-xs font-semibold text-gray-500">Category</label>
               <select value={newBudgetItem.category} onChange={(e) => setNewBudgetItem({ ...newBudgetItem, category: e.target.value as BudgetItem["category"] })}
@@ -946,7 +975,7 @@ export default function EventWorkspacePage() {
 
       {/* Add Task Modal */}
       {showAddTaskModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div role="dialog" aria-modal="true" aria-labelledby="add-task-title" className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <form
             onSubmit={async (e) => {
               e.preventDefault();
@@ -958,7 +987,7 @@ export default function EventWorkspacePage() {
             }}
             className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4"
           >
-            <h3 className="font-bold text-gray-900 text-lg">Add Task</h3>
+            <h3 id="add-task-title" className="font-bold text-gray-900 text-lg">Add Task</h3>
             <div>
               <label className="text-xs font-semibold text-gray-500">Task Title</label>
               <input type="text" required value={newTask.title} onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
@@ -989,7 +1018,7 @@ export default function EventWorkspacePage() {
 
       {/* Add Vendor Modal */}
       {showAddVendorModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div role="dialog" aria-modal="true" aria-labelledby="add-vendor-title" className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <form
             onSubmit={async (e) => {
               e.preventDefault();
@@ -1001,7 +1030,7 @@ export default function EventWorkspacePage() {
             }}
             className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4"
           >
-            <h3 className="font-bold text-gray-900 text-lg">Add Vendor</h3>
+            <h3 id="add-vendor-title" className="font-bold text-gray-900 text-lg">Add Vendor</h3>
             <div>
               <label className="text-xs font-semibold text-gray-500">Category</label>
               <input type="text" required value={newVendor.category} onChange={(e) => setNewVendor({ ...newVendor, category: e.target.value })}

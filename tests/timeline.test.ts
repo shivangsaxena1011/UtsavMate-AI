@@ -36,4 +36,21 @@ describe("Timeline Engine", () => {
     expect(ics).toContain("SUMMARY:Finalize Venue & Date Locking");
     expect(ics).toContain("2027");
   });
+
+  it("assigns high priority to critical initial bookings and locks", () => {
+    const tasks = generateTimelineTasks("wedding", "2027-04-15");
+    const venueTask = tasks.find((t) => t.title.toLowerCase().includes("venue"));
+    expect(venueTask).toBeDefined();
+    expect(venueTask!.priority).toBe("high");
+    expect(venueTask!.status).toBe("pending");
+  });
+
+  it("handles custom and community event types correctly", () => {
+    const tasks = generateTimelineTasks("community", "2027-05-01");
+    expect(tasks.length).toBeGreaterThan(3);
+    const hasVolunteerOrSafety = tasks.some(
+      (t) => t.category.includes("Safety") || t.title.includes("Volunteer") || t.category.includes("Logistics")
+    );
+    expect(hasVolunteerOrSafety).toBe(true);
+  });
 });

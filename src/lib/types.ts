@@ -1,14 +1,18 @@
 import { z } from "zod";
 
-export const EventTypeEnum = z.enum([
+export const EVENT_TYPES = [
   "wedding",
   "birthday",
   "anniversary",
   "college_fest",
   "community",
   "custom",
-]);
-export type EventType = z.infer<typeof EventTypeEnum>;
+] as const;
+export type EventType = (typeof EVENT_TYPES)[number];
+export const EventTypeEnum = z.preprocess(
+  (val) => (val === "college_event" ? "college_fest" : val),
+  z.enum(EVENT_TYPES)
+);
 
 export const BudgetCategoryEnum = z.enum([
   "venue",
@@ -39,8 +43,12 @@ export const VendorStatusEnum = z.enum([
 ]);
 export type VendorStatus = z.infer<typeof VendorStatusEnum>;
 
-export const LanguageEnum = z.enum(["en", "hi", "hinglish"]);
-export type Language = z.infer<typeof LanguageEnum>;
+export const LANGUAGES = ["en", "hi", "hinglish"] as const;
+export type Language = (typeof LANGUAGES)[number];
+export const LanguageEnum = z.preprocess(
+  (val) => (val === "english" ? "en" : val === "hindi" ? "hi" : val),
+  z.enum(LANGUAGES)
+);
 
 export interface EventRecord {
   id: string;

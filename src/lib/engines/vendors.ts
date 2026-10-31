@@ -137,9 +137,108 @@ export const VENDOR_TEMPLATES: Record<EventType, VendorTemplate[]> = {
       ],
     },
   ],
-  anniversary: [],
-  college_fest: [],
-  custom: [],
+  anniversary: [
+    {
+      category: "Venue",
+      defaultName: "Boutique Banquet or Heritage Hall",
+      suggestedPercent: 30,
+      questionsToAsk: [
+        "Is there an intimate private dining or ballroom space for families?",
+        "Are audio/video projectors available for memory montage screenings?",
+      ],
+    },
+    {
+      category: "Catering",
+      defaultName: "Gourmet Family Feast Caterer",
+      suggestedPercent: 35,
+      questionsToAsk: [
+        "Can you customize a nostalgic menu with traditional delicacies?",
+        "Do you provide a customized multi-tiered anniversary cake?",
+      ],
+    },
+    {
+      category: "Photography",
+      defaultName: "Portrait & Family Documentarian",
+      suggestedPercent: 15,
+      questionsToAsk: [
+        "Can we schedule a pre-event couple portrait session?",
+        "Do you provide a printed keepsake album for the couple?",
+      ],
+    },
+    {
+      category: "Decoration",
+      defaultName: "Warm Fairy-light & Floral Decor",
+      suggestedPercent: 15,
+      questionsToAsk: [
+        "Can you incorporate vintage family photos into the centerpiece decor?",
+      ],
+    },
+  ],
+  college_fest: [
+    {
+      category: "Stage & Sound",
+      defaultName: "Pro Stage, Truss & Line-Array Audio",
+      suggestedPercent: 35,
+      questionsToAsk: [
+        "What is the wattage and coverage capacity of the audio setup?",
+        "Do you have lighting consoles, smoke machines, and LED walls?",
+      ],
+    },
+    {
+      category: "Artist / Band",
+      defaultName: "Headline Band / DJ Artist Booking",
+      suggestedPercent: 30,
+      questionsToAsk: [
+        "What are the technical rider and hospitality requirements?",
+        "What is the performance duration and curfew timing?",
+      ],
+    },
+    {
+      category: "Food Stalls",
+      defaultName: "Multi-Cuisine Youth Food Court",
+      suggestedPercent: 20,
+      questionsToAsk: [
+        "How many concurrent food kiosks and quick-serve counters can be deployed?",
+        "Are digital payment setups ready at each counter?",
+      ],
+    },
+    {
+      category: "Security & Crowd Control",
+      defaultName: "Event Marshall & Barricading Team",
+      suggestedPercent: 10,
+      questionsToAsk: [
+        "Do you provide mojo barricades for the stage perimeter?",
+        "How many trained marshalls and female security staff are provided?",
+      ],
+    },
+  ],
+  custom: [
+    {
+      category: "Venue",
+      defaultName: "Event Venue Coordinator",
+      suggestedPercent: 30,
+      questionsToAsk: [
+        "What are the venue rental hours, load-in, and tear-down windows?",
+        "What safety, fire, and municipal permissions are required?",
+      ],
+    },
+    {
+      category: "Catering",
+      defaultName: "Custom Event Caterer",
+      suggestedPercent: 35,
+      questionsToAsk: [
+        "Can menus be adapted to dietary restrictions (vegan, jain, gluten-free)?",
+      ],
+    },
+    {
+      category: "Production",
+      defaultName: "Audio, Visual & Decor Team",
+      suggestedPercent: 25,
+      questionsToAsk: [
+        "Do you handle complete AV, backdrop, and ambient illumination?",
+      ],
+    },
+  ],
 };
 
 export function generateInitialVendors(
@@ -147,13 +246,14 @@ export function generateInitialVendors(
   totalBudget: number,
   eventId: string = "default"
 ): Vendor[] {
+  const safeBudget = Math.max(0, totalBudget);
   const templates =
     VENDOR_TEMPLATES[eventType] && VENDOR_TEMPLATES[eventType].length > 0
       ? VENDOR_TEMPLATES[eventType]
       : VENDOR_TEMPLATES.wedding;
 
   return templates.map((tmpl, idx) => {
-    const est = Math.round((totalBudget * tmpl.suggestedPercent) / 100);
+    const est = Math.round((safeBudget * tmpl.suggestedPercent) / 100);
     return {
       id: `vnd-${idx}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
       eventId,

@@ -5,6 +5,12 @@ import { CalendarDays, MapPin, Users, IndianRupee, PlusCircle, ArrowRight } from
 
 export const dynamic = "force-dynamic";
 
+function getDaysUntil(dateStr: string): number {
+  const eventDate = new Date(dateStr);
+  const now = new Date();
+  return Math.ceil((eventDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+}
+
 export default function EventsPage() {
   const events = listEvents();
 
@@ -46,9 +52,7 @@ export default function EventsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {events.map((evt) => {
-            const daysUntil = Math.ceil(
-              (new Date(evt.eventDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-            );
+            const daysUntil = getDaysUntil(evt.eventDate);
             const isUpcoming = daysUntil > 0;
 
             return (
