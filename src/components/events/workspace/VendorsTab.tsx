@@ -43,7 +43,7 @@ export function VendorsTab({
       tabIndex={0}
       className="space-y-5"
     >
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <h2 className="text-xl font-bold text-gray-900">Vendor Management</h2>
           <p className="text-sm text-gray-500">{vendors.length} vendors • Track quotes, status, and contacts</p>

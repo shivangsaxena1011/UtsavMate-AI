@@ -31,7 +31,7 @@ export function TimelineTab({
       tabIndex={0}
       className="space-y-5"
     >
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <h2 className="text-xl font-bold text-gray-900">Timeline & Tasks</h2>
           <p className="text-sm text-gray-500">
@@ -47,7 +47,7 @@ export function TimelineTab({
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {(["All Tasks", "Pending", "Completed", "Overdue"] as const).map((filter) => {
           const active = taskFilter === filter;
           return (
