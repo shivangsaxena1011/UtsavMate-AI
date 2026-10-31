@@ -1,8 +1,30 @@
-﻿# UtsavMate AI — Smart Celebration & Event Planner
+# UtsavMate AI — Smart Celebration & Event Planner
 
 > **Tagline:** *Every celebration. One smart plan.*
 
 A budget-first, GenAI-powered event planning assistant that turns celebration requirements into actionable, editable plans with calculated budgets, date-based countdown timelines, vendor checklists, and personalized recommendations for Indian weddings, birthdays, anniversaries, college fests, and community gatherings.
+
+---
+
+## Hackathon Submission Overview
+
+- **Chosen Vertical**: **[Challenge 5] Celebration & Event Planner**
+- **Public GitHub Repository**: [https://github.com/shivangsaxena1011/UtsavMate-AI](https://github.com/shivangsaxena1011/UtsavMate-AI)
+- **Repository Compliance**: Single branch (`main`), repository size ~0.22 MB (strictly < 10 MB limit).
+- **Approach & Logic**:
+  - **Deterministic Math Engine**: LLMs never compute finances. All category splits, totals, variances, per-guest expenses, and countdown intervals are calculated deterministically in TypeScript code.
+  - **Culturally-Aware GenAI**: Google Gemini API (`gemini-2.5-flash`) generates hyper-personalized themes, decor ideas, regional cuisine/live counters, and saving tips in English, Hindi, and Hinglish.
+  - **Dual-Engine Reliability**: Seamless fallback to tested deterministic cultural templates if an API key is absent or when offline.
+  - **Interactive Actionable Refinement**: Real-time budget adjustment engine (e.g. "reduce budget by 15%") updates saved records upon approval.
+- **How the Solution Works**:
+  1. *Onboarding*: The 3-step wizard collects event type, date, city, guest count, budget (INR), theme, dietary, and language preferences.
+  2. *Plan Generation*: Deterministic engines lay down mathematical foundations; Gemini AI crafts tailored themes, menus, and checklists.
+  3. *Active Management*: Interactive dashboard with editable budgets, task checkboxes, vendor quotation tracking, and AI chat.
+  4. *Multi-format Export*: One-click export to Markdown, Budget CSV, Vendors CSV, Google Calendar `.ics`, and print dossier.
+- **Assumptions Made**:
+  - Currency is INR (₹) using standard Indian numbering format (lakhs/crores).
+  - Milestone tasks scale proportionally based on lead time remaining before the celebration date.
+  - Focuses on planner workflows (budget, timeline, vendors, concepts) without live payment processing or unverified vendor booking.
 
 ---
 
