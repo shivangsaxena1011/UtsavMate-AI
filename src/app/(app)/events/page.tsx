@@ -3,13 +3,9 @@ import { listEvents } from "@/lib/storage";
 import { formatINR } from "@/lib/engines/budget";
 import { CalendarDays, MapPin, Users, IndianRupee, PlusCircle, ArrowRight } from "lucide-react";
 
-export const dynamic = "force-dynamic";
+import { getDaysUntil } from "@/lib/utils/date";
 
-function getDaysUntil(dateStr: string): number {
-  const eventDate = new Date(dateStr);
-  const now = new Date();
-  return Math.ceil((eventDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-}
+export const dynamic = "force-dynamic";
 
 export default function EventsPage() {
   const events = listEvents();

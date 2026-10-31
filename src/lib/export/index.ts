@@ -1,7 +1,26 @@
+/**
+ * @file index.ts
+ * @module lib/export
+ * @description Multi-format export services generating formatted Markdown executive summaries,
+ * RFC 4180 compliant CSV budget ledgers, CSV vendor coordination sheets, and RFC 5545 iCalendar files.
+ */
+
 import { FullEventPlan } from "../types";
 import { formatINR } from "../engines/budget";
 import { generateIcsCalendar } from "../engines/timeline";
 
+/**
+ * Generates an executive Markdown summary of the entire event plan, suitable for printing or client sharing.
+ *
+ * @param plan - Complete event plan
+ * @returns Formatted Markdown string with budget tables, timeline milestones, and vendor contacts
+ *
+ * @example
+ * ```ts
+ * const markdown = generateMarkdownPlan(plan);
+ * console.log(markdown.includes("# Priya Wedding")); // true
+ * ```
+ */
 export function generateMarkdownPlan(plan: FullEventPlan): string {
   const { event, budget, tasks, vendors, ideas } = plan;
 
@@ -52,6 +71,18 @@ export function generateMarkdownPlan(plan: FullEventPlan): string {
   return md;
 }
 
+/**
+ * Generates RFC 4180 compliant CSV content for all budget line items.
+ *
+ * @param plan - Complete event plan
+ * @returns Comma-separated spreadsheet string
+ *
+ * @example
+ * ```ts
+ * const csv = generateBudgetCsv(plan);
+ * console.log(csv.includes("Estimated Amount (INR)")); // true
+ * ```
+ */
 export function generateBudgetCsv(plan: FullEventPlan): string {
   const sanitize = (val: string | number) => `"${String(val).replace(/"/g, '""')}"`;
   const headers = ["Category", "Item Name", "Estimated Amount (INR)", "Actual Amount (INR)", "Status", "Notes"];
@@ -68,6 +99,18 @@ export function generateBudgetCsv(plan: FullEventPlan): string {
   return [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
 }
 
+/**
+ * Generates RFC 4180 compliant CSV content for vendor coordination tracking.
+ *
+ * @param plan - Complete event plan
+ * @returns Comma-separated spreadsheet string
+ *
+ * @example
+ * ```ts
+ * const csv = generateVendorCsv(plan);
+ * console.log(csv.includes("Business Name")); // true
+ * ```
+ */
 export function generateVendorCsv(plan: FullEventPlan): string {
   const sanitize = (val: string | number) => `"${String(val).replace(/"/g, '""')}"`;
   const headers = [

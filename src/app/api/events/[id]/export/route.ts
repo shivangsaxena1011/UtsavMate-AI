@@ -1,13 +1,42 @@
+/**
+ * @file route.ts
+ * @module app/api/events/[id]/export
+ * @description API route handler for exporting event plans into various standard formats.
+ * Streams Markdown (.md), Budget CSV (.csv), Vendor CSV (.csv), or iCalendar (.ics).
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 import { getEventPlan } from "@/lib/storage";
 import { generateMarkdownPlan, generateBudgetCsv, generateVendorCsv, generateIcsCalendar } from "@/lib/export";
+import { eventIdParamSchema, formatZodError } from "@/lib/validation/api";
 
+/**
+ * GET /api/events/[id]/export?format=markdown|csv-budget|csv-vendors|ics
+ * Generates and streams downloadable export files for the requested event plan.
+ *
+ * @param req - Incoming NextRequest with query string format
+ * @param context - Route context containing URL params
+ * @returns File attachment response or 404/400 JSON error
+ */
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const rawParams = await params;
+    const parsedParams = eventIdParamSchema.safeParse(rawParams);
+    if (!parsedParams.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Invalid event ID parameter",
+          details: formatZodError(parsedParams.error),
+        },
+        { status: 400 }
+      );
+    }
+    const { id } = parsedParams.data;
+
     const plan = getEventPlan(id);
     if (!plan) {
       return NextResponse.json(

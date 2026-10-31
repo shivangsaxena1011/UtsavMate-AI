@@ -1,7 +1,20 @@
+/**
+ * @file route.ts
+ * @module app/api/events
+ * @description Master events collection API route handler.
+ * Provides event listing (GET) and new event plan synthesis (POST) with Zod validation.
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 import { CreateEventInputSchema } from "@/lib/types";
 import { createNewEvent, listEvents } from "@/lib/storage";
 
+/**
+ * GET /api/events
+ * Lists all stored event summaries sorted by event date.
+ *
+ * @returns JSON response with array of stored events
+ */
 export async function GET() {
   try {
     const events = listEvents();
@@ -15,9 +28,25 @@ export async function GET() {
   }
 }
 
+/**
+ * POST /api/events
+ * Validates CreateEventInputSchema and initializes a new event plan.
+ *
+ * @param req - Incoming NextRequest containing new event input parameters
+ * @returns JSON response with newly initialized FullEventPlan (HTTP 201) or validation errors (HTTP 400)
+ */
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "Invalid JSON payload" },
+        { status: 400 }
+      );
+    }
+
     const validated = CreateEventInputSchema.safeParse(body);
 
     if (!validated.success) {

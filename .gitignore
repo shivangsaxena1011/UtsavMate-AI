@@ -44,3 +44,6 @@ next-env.d.ts
 # local database / events
 data/events/*.json
 !data/events/.gitkeep
+
+# agent workspaces
+.agents/

@@ -1,12 +1,29 @@
+/**
+ * @file vendors.ts
+ * @module lib/engines/vendors
+ * @description Vendor template management and quote estimation engine tailored for Indian celebrations.
+ * Synthesizes default vendor checklists, percentage-based budget allocations, and cultural vetting inquiries.
+ */
+
 import { EventType, Vendor } from "../types";
 
+/**
+ * Template structure defining default supplier attributes and vetting questions.
+ */
 export interface VendorTemplate {
+  /** Commercial category (e.g. "Venue", "Catering", "Photography") */
   category: string;
+  /** Suggested default business placeholder name */
   defaultName: string;
+  /** Recommended percentage of overall budget */
   suggestedPercent: number;
+  /** Essential culturally attuned vetting questions to ask contractor */
   questionsToAsk: string[];
 }
 
+/**
+ * Standard vendor supplier configurations across celebration types.
+ */
 export const VENDOR_TEMPLATES: Record<EventType, VendorTemplate[]> = {
   wedding: [
     {
@@ -241,6 +258,20 @@ export const VENDOR_TEMPLATES: Record<EventType, VendorTemplate[]> = {
   ],
 };
 
+/**
+ * Generates baseline vendor supplier records with suggested quote allocations and cultural vetting questions.
+ *
+ * @param eventType - Category of celebration (e.g. "wedding", "birthday", "community")
+ * @param totalBudget - Overall event budget in INR
+ * @param eventId - Parent event ID
+ * @returns Initialized Vendor records ready for tracking
+ *
+ * @example
+ * ```ts
+ * const vendors = generateInitialVendors("wedding", 500000, "evt-123");
+ * console.log(`Generated ${vendors.length} vendor supplier records`);
+ * ```
+ */
 export function generateInitialVendors(
   eventType: EventType,
   totalBudget: number,

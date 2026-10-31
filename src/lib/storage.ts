@@ -1,6 +1,15 @@
+/**
+ * @file storage.ts
+ * @module lib/storage
+ * @description Resilient persistence layer supporting in-memory caching and filesystem JSON storage
+ * with atomic write guarantees for serverless and containerized deployments.
+ * Implements structured diagnostic logging, schema validation on deserialization,
+ * and orphaned temporary file cleanup.
+ */
+
 import fs from "fs";
 import path from "path";
-import { CreateEventInput, FullEventPlan } from "./types";
+import { CreateEventInput, FullEventPlan, FullEventPlanSchema } from "./types";
 import { generateInitialBudget } from "./engines/budget";
 import { generateTimelineTasks } from "./engines/timeline";
 import { generateInitialVendors } from "./engines/vendors";
@@ -14,15 +23,24 @@ const BASE_DATA_PATH = process.env.VERCEL
 const DATA_DIR = BASE_DATA_PATH;
 const EVENTS_DIR = path.join(DATA_DIR, "events");
 
+// Type-safe declaration merging on globalThis to survive Next.js HMR cycles and warm serverless containers
+declare global {
+  var __utsavmate_events: Map<string, FullEventPlan> | undefined;
+}
+
 // In-memory resilient cache across hot serverless requests
 const memoryStore: Map<string, FullEventPlan> =
-  (globalThis as unknown as { __utsavmate_events?: Map<string, FullEventPlan> }).__utsavmate_events ||
-  new Map<string, FullEventPlan>();
+  globalThis.__utsavmate_events ?? new Map<string, FullEventPlan>();
 
-(globalThis as unknown as { __utsavmate_events?: Map<string, FullEventPlan> }).__utsavmate_events = memoryStore;
+globalThis.__utsavmate_events = memoryStore;
 
-// Ensure data directory exists
-function ensureDirs() {
+/**
+ * Ensures data directory hierarchy exists on the filesystem.
+ * Handles read-only or restricted serverless environments gracefully with structured logging.
+ *
+ * @internal
+ */
+function ensureDirs(): void {
   try {
     if (!fs.existsSync(DATA_DIR)) {
       fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -30,25 +48,64 @@ function ensureDirs() {
     if (!fs.existsSync(EVENTS_DIR)) {
       fs.mkdirSync(EVENTS_DIR, { recursive: true });
     }
-  } catch {
-    // Non-fatal if filesystem is restricted; memoryStore acts as fallback
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.warn(
+      `[Storage:ensureDirs] Filesystem directory creation failed at "${DATA_DIR}". Operating with in-memory fallback:`,
+      message
+    );
   }
 }
 
 /**
- * Atomic write helper with in-memory resilient fallback.
+ * Atomically writes data to disk using temporary file creation and atomic rename,
+ * preventing corruption from concurrent writes or interrupted serverless execution.
+ * Cleans up orphaned temporary files upon failure.
+ *
+ * @param filePath - Target absolute destination file path
+ * @param data - Serializable JSON data object
  */
-function atomicWriteJson(filePath: string, data: unknown) {
+function atomicWriteJson(filePath: string, data: unknown): void {
+  let tempPath: string | null = null;
   try {
     ensureDirs();
-    const tempPath = `${filePath}.tmp.${Date.now()}`;
+    tempPath = `${filePath}.tmp.${Date.now()}`;
     fs.writeFileSync(tempPath, JSON.stringify(data, null, 2), "utf-8");
     fs.renameSync(tempPath, filePath);
-  } catch {
-    // Filesystem write failed; data is preserved in memoryStore
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.warn(
+      `[Storage:atomicWriteJson] Failed writing to "${filePath}". Data is preserved in memoryStore:`,
+      message
+    );
+    if (tempPath) {
+      try {
+        if (fs.existsSync(tempPath)) {
+          fs.unlinkSync(tempPath);
+        }
+      } catch (cleanupErr: unknown) {
+        console.warn(
+          `[Storage:atomicWriteJson] Failed to clean up orphaned temp file "${tempPath}":`,
+          cleanupErr instanceof Error ? cleanupErr.message : cleanupErr
+        );
+      }
+    }
   }
 }
 
+/**
+ * Retrieves all saved event summary records sorted chronologically by event date.
+ * Queries local filesystem with memory cache fallback and skips corrupt files.
+ *
+ * @param userId - Optional user ID filter (defaults to returning all matching events)
+ * @returns Array of EventRecord summaries sorted ascending by eventDate
+ *
+ * @example
+ * ```ts
+ * const events = listEvents("default-user");
+ * console.log(`Loaded ${events.length} events`);
+ * ```
+ */
 export function listEvents(userId?: string): FullEventPlan["event"][] {
   ensureDirs();
   const eventMap = new Map<string, FullEventPlan["event"]>();
@@ -60,17 +117,32 @@ export function listEvents(userId?: string): FullEventPlan["event"][] {
       for (const file of files) {
         try {
           const content = fs.readFileSync(path.join(EVENTS_DIR, file), "utf-8");
-          const plan: FullEventPlan = JSON.parse(content);
-          if (!userId || plan.event.userId === userId || plan.event.userId === "default-user") {
-            eventMap.set(plan.event.id, plan.event);
+          const parsedJson: unknown = JSON.parse(content);
+          const validated = FullEventPlanSchema.safeParse(parsedJson);
+          if (validated.success) {
+            const plan = validated.data;
+            if (!userId || plan.event.userId === userId || plan.event.userId === "default-user") {
+              eventMap.set(plan.event.id, plan.event);
+            }
+          } else {
+            console.warn(
+              `[Storage:listEvents] Skipped corrupt or invalid event file "${file}":`,
+              validated.error.format()
+            );
           }
-        } catch {
-          // Ignore corrupt files
+        } catch (err: unknown) {
+          console.warn(
+            `[Storage:listEvents] Skipped corrupt or unreadable event file "${file}":`,
+            err instanceof Error ? err.message : err
+          );
         }
       }
     }
-  } catch {
-    // Disk read failed; proceed to memory
+  } catch (err: unknown) {
+    console.warn(
+      "[Storage:listEvents] Failed reading events directory from disk; serving from in-memory cache:",
+      err instanceof Error ? err.message : err
+    );
   }
 
   // 2. Overlay in-memory cache
@@ -85,6 +157,13 @@ export function listEvents(userId?: string): FullEventPlan["event"][] {
   );
 }
 
+/**
+ * Retrieves a complete event plan by its unique event ID.
+ * Checks hot memory cache first before reading and validating from disk.
+ *
+ * @param eventId - The unique event identifier (e.g. "event-k9z2-841a")
+ * @returns FullEventPlan object if found and valid; null otherwise
+ */
 export function getEventPlan(eventId: string): FullEventPlan | null {
   // Check memory first
   if (memoryStore.has(eventId)) {
@@ -96,17 +175,35 @@ export function getEventPlan(eventId: string): FullEventPlan | null {
   try {
     if (fs.existsSync(filePath)) {
       const content = fs.readFileSync(filePath, "utf-8");
-      const plan = JSON.parse(content) as FullEventPlan;
-      memoryStore.set(eventId, plan);
-      return plan;
+      const parsedJson: unknown = JSON.parse(content);
+      const validated = FullEventPlanSchema.safeParse(parsedJson);
+      if (validated.success) {
+        memoryStore.set(eventId, validated.data);
+        return validated.data;
+      } else {
+        console.warn(
+          `[Storage:getEventPlan] Schema validation failed for event "${eventId}":`,
+          validated.error.format()
+        );
+        return null;
+      }
     }
-  } catch (err) {
-    console.error("Error reading plan from disk:", err);
+  } catch (err: unknown) {
+    console.warn(
+      `[Storage:getEventPlan] Error reading event plan from disk for "${eventId}":`,
+      err instanceof Error ? err.message : err
+    );
   }
 
   return null;
 }
 
+/**
+ * Persists an event plan to memory cache and writes atomically to disk.
+ * Automatically stamps updatedAt with current ISO 8601 timestamp.
+ *
+ * @param plan - The FullEventPlan object to store
+ */
 export function saveEventPlan(plan: FullEventPlan): void {
   plan.event.updatedAt = new Date().toISOString();
   memoryStore.set(plan.event.id, plan);
@@ -116,6 +213,14 @@ export function saveEventPlan(plan: FullEventPlan): void {
   atomicWriteJson(filePath, plan);
 }
 
+/**
+ * Initializes a new event plan by synthesizing deterministic base budgets, timeline milestones,
+ * vendor templates, and AI-generated personalized ideas.
+ *
+ * @param input - Validated new event form input data
+ * @param userId - Owner identifier (defaults to "default-user")
+ * @returns Promise resolving to the newly created and saved FullEventPlan
+ */
 export async function createNewEvent(
   input: CreateEventInput,
   userId: string = "default-user"
@@ -177,17 +282,29 @@ export async function createNewEvent(
   return fullPlan;
 }
 
+/**
+ * Deletes an event from memory cache and removes its backing JSON file from disk.
+ *
+ * @param eventId - Unique event identifier to delete
+ * @returns True if deletion completed in memory or on disk
+ */
 export function deleteEvent(eventId: string): boolean {
-  memoryStore.delete(eventId);
+  const memoryExisted = memoryStore.delete(eventId);
+  let diskDeleted = false;
+
   try {
     ensureDirs();
     const filePath = path.join(EVENTS_DIR, `${eventId}.json`);
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
-      return true;
+      diskDeleted = true;
     }
-  } catch {
-    // Filesystem deletion failed, but memoryStore cleared
+  } catch (err: unknown) {
+    console.warn(
+      `[Storage:deleteEvent] Filesystem deletion failed for event "${eventId}":`,
+      err instanceof Error ? err.message : err
+    );
   }
-  return true;
+
+  return memoryExisted || diskDeleted;
 }

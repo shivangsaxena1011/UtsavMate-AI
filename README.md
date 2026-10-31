@@ -96,16 +96,25 @@ npm test
 
 ### Actual Test Results (Vitest)
 ```text
- ✓ tests/budget.test.ts (8 tests)
- ✓ tests/vendors.test.ts (3 tests)
- ✓ tests/timeline.test.ts (5 tests)
+ ✓ tests/adversarial_challenge.test.ts (15 tests)
+ ✓ tests/errors.test.ts (7 tests)
+ ✓ tests/refine.test.ts (24 tests)
+ ✓ tests/api_validation.test.ts (19 tests)
  ✓ tests/schema.test.ts (4 tests)
  ✓ tests/ai.test.ts (3 tests)
+ ✓ tests/budget.test.ts (8 tests)
+ ✓ tests/adversarial_refine_engine.test.ts (27 tests)
+ ✓ tests/timeline.test.ts (5 tests)
  ✓ tests/api.test.ts (3 tests)
+ ✓ tests/vendors.test.ts (3 tests)
+ ✓ tests/workspace.test.ts (21 tests)
+ ✓ tests/adversarial_lifecycle_concurrency.test.ts (9 tests)
+ ✓ tests/adversarial_error_resilience.test.ts (23 tests)
+ ✓ tests/adversarial_api_routes.test.ts (55 tests)
 
- Test Files  6 passed (6)
-      Tests  26 passed (26)
-   Duration  360ms
+ Test Files  15 passed (15)
+      Tests  226 passed (226)
+   Duration  860ms
 ```
 
 ---

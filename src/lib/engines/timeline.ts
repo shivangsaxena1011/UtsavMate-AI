@@ -1,13 +1,31 @@
+/**
+ * @file timeline.ts
+ * @module lib/engines/timeline
+ * @description Generates culturally attuned milestone tasks relative to event target dates
+ * and exports standard RFC 5545 iCalendar (.ics) files.
+ */
+
 import { EventType, TimelineTask } from "../types";
 
-interface MilestoneRule {
-  offsetDays: number; // Negative = before event, 0 = event day, Positive = after event
+/**
+ * Internal template specification defining a single chronological milestone rule.
+ */
+export interface MilestoneRule {
+  /** Day offset relative to the event date (Negative = before event, 0 = event day, Positive = after event) */
+  offsetDays: number;
+  /** Actionable milestone headline */
   title: string;
+  /** Comprehensive checklist guidance and tasks */
   description: string;
+  /** Priority level */
   priority: "high" | "medium" | "low";
+  /** Functional category */
   category: string;
 }
 
+/**
+ * Standard milestone progression for Indian wedding ceremonies.
+ */
 const WEDDING_MILESTONES: MilestoneRule[] = [
   {
     offsetDays: -120,
@@ -95,6 +113,9 @@ const WEDDING_MILESTONES: MilestoneRule[] = [
   },
 ];
 
+/**
+ * Milestone progression for birthday and anniversary celebrations.
+ */
 const BIRTHDAY_MILESTONES: MilestoneRule[] = [
   {
     offsetDays: -30,
@@ -147,6 +168,9 @@ const BIRTHDAY_MILESTONES: MilestoneRule[] = [
   },
 ];
 
+/**
+ * Milestone progression for community festivals and college gatherings.
+ */
 const COMMUNITY_MILESTONES: MilestoneRule[] = [
   {
     offsetDays: -45,
@@ -200,7 +224,19 @@ const COMMUNITY_MILESTONES: MilestoneRule[] = [
 ];
 
 /**
- * Generate date-aware timeline tasks relative to event date.
+ * Generates date-anchored planning tasks relative to the scheduled event date.
+ * Automatically compresses timeline offsets proportionally if the event is scheduled in the near future.
+ *
+ * @param eventType - Category of event (e.g. "wedding", "birthday", "community")
+ * @param eventDateStr - Target celebration date in YYYY-MM-DD format
+ * @param eventId - Parent event ID
+ * @returns Chronologically sequenced TimelineTask records
+ *
+ * @example
+ * ```ts
+ * const tasks = generateTimelineTasks("wedding", "2027-10-15", "evt-123");
+ * console.log(`Generated ${tasks.length} timeline milestones`);
+ * ```
  */
 export function generateTimelineTasks(
   eventType: EventType,
@@ -258,14 +294,24 @@ export function generateTimelineTasks(
       category: rule.category,
       dueDate,
       priority: rule.priority,
-      status: isPast ? "pending" : "pending",
+      status: "pending",
       isOverdue: isPast,
     };
   });
 }
 
 /**
- * Generates an RFC 5545 iCalendar (.ics) string from timeline tasks.
+ * Generates an RFC 5545 compliant iCalendar (.ics) string containing all event tasks as calendar entries.
+ *
+ * @param eventTitle - Celebration title for calendar metadata
+ * @param tasks - Array of TimelineTask items to export
+ * @returns CRLF-delimited standard .ics file content
+ *
+ * @example
+ * ```ts
+ * const ics = generateIcsCalendar("Priya Wedding", tasks);
+ * console.log(ics.startsWith("BEGIN:VCALENDAR")); // true
+ * ```
  */
 export function generateIcsCalendar(
   eventTitle: string,

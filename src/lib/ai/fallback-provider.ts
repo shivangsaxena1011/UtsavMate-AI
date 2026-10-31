@@ -1,7 +1,26 @@
+/**
+ * @file fallback-provider.ts
+ * @module lib/ai/fallback-provider
+ * @description Intelligent deterministic plan generator providing offline, zero-latency
+ * culturally attuned event plans in English, Hindi, and Hinglish.
+ */
+
 import { EventRecord } from "../types";
 import { GeneratedPlan } from "./types";
 import { formatINR } from "../engines/budget";
 
+/**
+ * Generates an intelligent, deterministic celebration plan tailored to event type, city, budget, and language.
+ *
+ * @param event - The master event record specifications
+ * @returns Fully populated, validated GeneratedPlan object
+ *
+ * @example
+ * ```ts
+ * const plan = generateDeterministicPlan(eventRecord);
+ * console.log(plan.themeConcepts.length); // >= 2
+ * ```
+ */
 export function generateDeterministicPlan(event: EventRecord): GeneratedPlan {
   const isHindi = event.language === "hi";
   const isHinglish = event.language === "hinglish";

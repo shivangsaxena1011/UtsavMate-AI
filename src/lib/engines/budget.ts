@@ -1,5 +1,16 @@
-import { BudgetCategory, BudgetItem, BudgetSummary, EventType } from "../types";
+/**
+ * @file budget.ts
+ * @module lib/engines/budget
+ * @description Deterministic financial calculation engine for Indian event planning.
+ * Computes category distributions, Indian currency formatting (INR), overspend variances,
+ * and guest-count scaling without unchecked type assertions.
+ */
 
+import { BudgetCategory, BudgetCategoryEnum, BudgetItem, BudgetSummary, EventType } from "../types";
+
+/**
+ * Human-readable display labels for budget categories.
+ */
 export const CATEGORY_LABELS: Record<BudgetCategory, string> = {
   venue: "Venue & Location",
   catering: "Catering & Beverages",
@@ -13,7 +24,9 @@ export const CATEGORY_LABELS: Record<BudgetCategory, string> = {
   other: "Miscellaneous",
 };
 
-// Percentage splits per event type (must sum to 100)
+/**
+ * Percentage splits per event type (summing to 100).
+ */
 export const DEFAULT_BUDGET_SPLITS: Record<EventType, Record<BudgetCategory, number>> = {
   wedding: {
     venue: 30,
@@ -90,8 +103,13 @@ export const DEFAULT_BUDGET_SPLITS: Record<EventType, Record<BudgetCategory, num
 };
 
 /**
- * Generate initial budget lines based on event type and total budget.
- * Handles integer round-off by allocating the exact remainder to contingency.
+ * Generates initial budget breakdown items for an event based on category split benchmarks.
+ * Guarantees that the sum of line items matches totalBudget exactly by allocating rounding remainders to contingency.
+ *
+ * @param eventType - Category of event (e.g. "wedding", "birthday")
+ * @param totalBudget - Overall spending limit in INR
+ * @param eventId - Parent event ID
+ * @returns Array of BudgetItem line items
  */
 export function generateInitialBudget(
   eventType: EventType,
@@ -102,10 +120,8 @@ export function generateInitialBudget(
   const items: BudgetItem[] = [];
   let allocatedSum = 0;
 
-  // Categories to create
-  const categories = Object.keys(splits) as BudgetCategory[];
-
-  for (const cat of categories) {
+  // Iterate over typed budget category enum options without type assertion
+  for (const cat of BudgetCategoryEnum.options) {
     const percent = splits[cat] || 0;
     if (percent > 0) {
       // Use Math.floor to keep integers, avoiding floating inaccuracies
@@ -146,8 +162,13 @@ export function generateInitialBudget(
 }
 
 /**
- * Computes authoritative financial metrics for a set of budget items.
- * Pure deterministic calculation.
+ * Computes authoritative financial health metrics and warning alerts from budget items.
+ * Pure deterministic calculation with zero external side effects.
+ *
+ * @param items - List of budget items with estimated and actual costs
+ * @param totalBudget - Total target budget in INR
+ * @param guestCount - Number of guests attending (used for per-head metric calculation)
+ * @returns BudgetSummary object containing variances, utilization percentage, and warning strings
  */
 export function computeBudgetSummary(
   items: BudgetItem[],
@@ -196,8 +217,7 @@ export function computeBudgetSummary(
 
   const warnings: string[] = [];
 
-  for (const cat of Object.keys(categoryMap) as BudgetCategory[]) {
-    const entry = categoryMap[cat];
+  for (const entry of Object.values(categoryMap)) {
     entry.variance = entry.actual - entry.estimated;
     entry.percentageOfBudget = totalBudget > 0 ? Math.round((entry.estimated / totalBudget) * 100) : 0;
     if (entry.actual > entry.estimated && entry.estimated > 0) {
@@ -211,9 +231,7 @@ export function computeBudgetSummary(
   const remainingFromEstimated = totalBudget - totalEstimated;
   const remainingFromActual = totalBudget - totalActual;
   
-  const hasCategoryOverspend = (Object.keys(categoryMap) as BudgetCategory[]).some(
-    (cat) => categoryMap[cat].isOverspent
-  );
+  const hasCategoryOverspend = Object.values(categoryMap).some((entry) => entry.isOverspent);
   const isTotalOverspent = totalEstimated > totalBudget || totalActual > totalBudget;
   const isOverspent = isTotalOverspent || hasCategoryOverspend;
 
@@ -223,9 +241,9 @@ export function computeBudgetSummary(
   );
 
   let categoryOverspentSum = 0;
-  for (const cat of Object.keys(categoryMap) as BudgetCategory[]) {
-    if (categoryMap[cat].isOverspent) {
-      categoryOverspentSum += categoryMap[cat].variance;
+  for (const entry of Object.values(categoryMap)) {
+    if (entry.isOverspent) {
+      categoryOverspentSum += entry.variance;
     }
   }
 
@@ -257,7 +275,15 @@ export function computeBudgetSummary(
 }
 
 /**
- * Format currency in Indian numbering system (e.g., ₹4,00,000)
+ * Formats a numerical amount into Indian currency format (Lakhs and Crores, e.g. ₹4,50,000).
+ *
+ * @param amount - Numerical value in INR
+ * @returns Formatted currency string with ₹ symbol
+ *
+ * @example
+ * ```ts
+ * formatINR(450000); // "₹4,50,000"
+ * ```
  */
 export function formatINR(amount: number): string {
   if (isNaN(amount)) return "₹0";
@@ -269,7 +295,13 @@ export function formatINR(amount: number): string {
 }
 
 /**
- * Recalculate catering and favor items proportionally when guest count changes
+ * Proportionally recalculates guest-dependent budget categories (catering, invitations)
+ * when expected guest count is modified.
+ *
+ * @param items - Current budget items
+ * @param oldGuests - Previous guest headcount
+ * @param newGuests - New target guest headcount
+ * @returns Updated BudgetItem array with adjusted estimates
  */
 export function recalculateForGuestCount(
   items: BudgetItem[],

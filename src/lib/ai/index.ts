@@ -1,14 +1,39 @@
+/**
+ * @file index.ts
+ * @module lib/ai
+ * @description Gateway service for AI plan generation. Dispatches to live Google Gemini API
+ * when configured, or transparently falls back to intelligent deterministic generation.
+ */
+
 import { EventRecord } from "../types";
 import { GeneratedPlan } from "./types";
 import { generateGeminiPlan } from "./gemini-provider";
 import { generateDeterministicPlan } from "./fallback-provider";
 
+/**
+ * Result payload containing generated event plan and execution source metadata.
+ */
 export interface PlanGenerationResult {
+  /** The generated plan containing thematic concepts, ideas, and advice */
   plan: GeneratedPlan;
+  /** Originating generation engine */
   source: "gemini" | "deterministic_fallback";
+  /** Informational notice if fallback was activated */
   notice?: string;
 }
 
+/**
+ * Coordinates generation of culturally attuned event concepts, ideas, and cost-saving tips.
+ *
+ * @param event - The master event record specifications
+ * @returns Promise resolving to GeneratedPlan and execution source metadata
+ *
+ * @example
+ * ```ts
+ * const result = await generateEventPlan(eventRecord);
+ * console.log(`Plan generated via: ${result.source}`);
+ * ```
+ */
 export async function generateEventPlan(event: EventRecord): Promise<PlanGenerationResult> {
   // If Gemini API Key is configured, attempt live AI generation
   if (process.env.GEMINI_API_KEY) {

@@ -1,8 +1,28 @@
+/**
+ * @file gemini-provider.ts
+ * @module lib/ai/gemini-provider
+ * @description Google Gemini API provider service for live AI event plan generation.
+ * Enforces structured JSON output and prompt injection defense barriers.
+ */
+
 import { GoogleGenAI } from "@google/genai";
 import { EventRecord } from "../types";
 import { GeneratedPlan, GeneratedPlanSchema } from "./types";
 import { formatINR } from "../engines/budget";
 
+/**
+ * Invokes the Google Gemini API to generate an actionable, culturally attuned event plan.
+ *
+ * @param event - The master event record specifications
+ * @returns Promise resolving to a validated GeneratedPlan object
+ * @throws Error if GEMINI_API_KEY is not configured or generation fails schema validation
+ *
+ * @example
+ * ```ts
+ * const plan = await generateGeminiPlan(eventRecord);
+ * console.log(plan.themeConcepts[0].name);
+ * ```
+ */
 export async function generateGeminiPlan(event: EventRecord): Promise<GeneratedPlan> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
