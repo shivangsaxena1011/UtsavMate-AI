@@ -199,3 +199,88 @@ export async function DELETE(
     );
   }
 }
+
+/**
+ * PATCH /api/events/[id]/tasks
+ * Partially updates an existing task (e.g. status, priority, dueDate).
+ */
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const rawParams = await params;
+    const parsedParams = eventIdParamSchema.safeParse(rawParams);
+    if (!parsedParams.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Invalid event ID parameter",
+          details: formatZodError(parsedParams.error),
+        },
+        { status: 400 }
+      );
+    }
+    const { id } = parsedParams.data;
+
+    const plan = getEventPlan(id);
+    if (!plan) {
+      return NextResponse.json(
+        { success: false, error: "Event not found" },
+        { status: 404 }
+      );
+    }
+
+    let body: Record<string, unknown>;
+    try {
+      body = (await req.json()) as Record<string, unknown>;
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "Invalid JSON payload" },
+        { status: 400 }
+      );
+    }
+
+    const targetId = (body.id || body.taskId) as string | undefined;
+    if (!targetId || typeof targetId !== "string") {
+      return NextResponse.json(
+        { success: false, error: "taskId or id is required for PATCH update" },
+        { status: 400 }
+      );
+    }
+
+    const taskIndex = plan.tasks.findIndex((t) => t.id === targetId);
+    if (taskIndex === -1) {
+      return NextResponse.json(
+        { success: false, error: "Task not found" },
+        { status: 404 }
+      );
+    }
+
+    const existing = plan.tasks[taskIndex];
+    plan.tasks[taskIndex] = {
+      ...existing,
+      ...(typeof body.title === "string" ? { title: body.title } : {}),
+      ...(typeof body.description === "string" ? { description: body.description } : {}),
+      ...(typeof body.category === "string" ? { category: body.category } : {}),
+      ...(typeof body.dueDate === "string" ? { dueDate: body.dueDate } : {}),
+      ...(body.priority === "high" || body.priority === "medium" || body.priority === "low"
+        ? { priority: body.priority }
+        : {}),
+      ...(body.status === "pending" || body.status === "in_progress" || body.status === "completed"
+        ? { status: body.status }
+        : {}),
+      ...(typeof body.notes === "string" ? { notes: body.notes } : {}),
+      ...(typeof body.isOverdue === "boolean" ? { isOverdue: body.isOverdue } : {}),
+    };
+
+    saveEventPlan(plan);
+    return NextResponse.json({ success: true, tasks: plan.tasks });
+  } catch (err: unknown) {
+    console.error("Failed to patch task:", err);
+    return NextResponse.json(
+      { success: false, error: "Failed to update task" },
+      { status: 500 }
+    );
+  }
+}

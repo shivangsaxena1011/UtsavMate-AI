@@ -193,3 +193,83 @@ export async function DELETE(
     );
   }
 }
+
+/**
+ * PATCH /api/events/[id]/budget
+ * Partially updates an existing budget item (e.g. actualAmount, estimatedAmount, status).
+ */
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const rawParams = await params;
+    const parsedParams = eventIdParamSchema.safeParse(rawParams);
+    if (!parsedParams.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Invalid event ID parameter",
+          details: formatZodError(parsedParams.error),
+        },
+        { status: 400 }
+      );
+    }
+    const { id } = parsedParams.data;
+
+    const plan = getEventPlan(id);
+    if (!plan) {
+      return NextResponse.json(
+        { success: false, error: "Event not found" },
+        { status: 404 }
+      );
+    }
+
+    let body: Record<string, unknown>;
+    try {
+      body = (await req.json()) as Record<string, unknown>;
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "Invalid JSON payload" },
+        { status: 400 }
+      );
+    }
+
+    const targetId = (body.id || body.itemId) as string | undefined;
+    if (!targetId || typeof targetId !== "string") {
+      return NextResponse.json(
+        { success: false, error: "itemId or id is required for PATCH update" },
+        { status: 400 }
+      );
+    }
+
+    const itemIndex = plan.budget.findIndex((b) => b.id === targetId);
+    if (itemIndex === -1) {
+      return NextResponse.json(
+        { success: false, error: "Budget item not found" },
+        { status: 404 }
+      );
+    }
+
+    const existing = plan.budget[itemIndex];
+    plan.budget[itemIndex] = {
+      ...existing,
+      ...(typeof body.name === "string" ? { name: body.name } : {}),
+      ...(typeof body.estimatedAmount === "number" ? { estimatedAmount: body.estimatedAmount } : {}),
+      ...(typeof body.actualAmount === "number" ? { actualAmount: body.actualAmount } : {}),
+      ...(typeof body.notes === "string" ? { notes: body.notes } : {}),
+      ...(body.status === "planned" || body.status === "booked" || body.status === "paid"
+        ? { status: body.status }
+        : {}),
+    };
+
+    saveEventPlan(plan);
+    return NextResponse.json({ success: true, budget: plan.budget });
+  } catch (err: unknown) {
+    console.error("Failed to patch budget item:", err);
+    return NextResponse.json(
+      { success: false, error: "Failed to update budget item" },
+      { status: 500 }
+    );
+  }
+}

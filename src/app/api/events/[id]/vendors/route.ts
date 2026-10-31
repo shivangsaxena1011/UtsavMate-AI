@@ -211,3 +211,88 @@ export async function DELETE(
     );
   }
 }
+
+/**
+ * PATCH /api/events/[id]/vendors
+ * Partially updates an existing vendor (e.g. quotes, status, notes).
+ */
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const rawParams = await params;
+    const parsedParams = eventIdParamSchema.safeParse(rawParams);
+    if (!parsedParams.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Invalid event ID parameter",
+          details: formatZodError(parsedParams.error),
+        },
+        { status: 400 }
+      );
+    }
+    const { id } = parsedParams.data;
+
+    const plan = getEventPlan(id);
+    if (!plan) {
+      return NextResponse.json(
+        { success: false, error: "Event not found" },
+        { status: 404 }
+      );
+    }
+
+    let body: Record<string, unknown>;
+    try {
+      body = (await req.json()) as Record<string, unknown>;
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "Invalid JSON payload" },
+        { status: 400 }
+      );
+    }
+
+    const targetId = (body.id || body.vendorId) as string | undefined;
+    if (!targetId || typeof targetId !== "string") {
+      return NextResponse.json(
+        { success: false, error: "vendorId or id is required for PATCH update" },
+        { status: 400 }
+      );
+    }
+
+    const vendorIndex = plan.vendors.findIndex((v) => v.id === targetId);
+    if (vendorIndex === -1) {
+      return NextResponse.json(
+        { success: false, error: "Vendor not found" },
+        { status: 404 }
+      );
+    }
+
+    const existing = plan.vendors[vendorIndex];
+    plan.vendors[vendorIndex] = {
+      ...existing,
+      ...(typeof body.businessName === "string" ? { businessName: body.businessName } : {}),
+      ...(typeof body.category === "string" ? { category: body.category } : {}),
+      ...(typeof body.contactPerson === "string" ? { contactPerson: body.contactPerson } : {}),
+      ...(typeof body.phone === "string" ? { phone: body.phone } : {}),
+      ...(typeof body.email === "string" ? { email: body.email } : {}),
+      ...(typeof body.estimatedQuote === "number" ? { estimatedQuote: body.estimatedQuote } : {}),
+      ...(typeof body.finalQuote === "number" ? { finalQuote: body.finalQuote } : {}),
+      ...(typeof body.status === "string" && ["not_contacted", "contacted", "quote_received", "booked", "not_proceeding"].includes(body.status)
+        ? { status: body.status as "not_contacted" | "contacted" | "quote_received" | "booked" | "not_proceeding" }
+        : {}),
+      ...(typeof body.notes === "string" ? { notes: body.notes } : {}),
+      ...(typeof body.paymentNotes === "string" ? { paymentNotes: body.paymentNotes } : {}),
+    };
+
+    saveEventPlan(plan);
+    return NextResponse.json({ success: true, vendors: plan.vendors });
+  } catch (err: unknown) {
+    console.error("Failed to patch vendor:", err);
+    return NextResponse.json(
+      { success: false, error: "Failed to update vendor" },
+      { status: 500 }
+    );
+  }
+}
